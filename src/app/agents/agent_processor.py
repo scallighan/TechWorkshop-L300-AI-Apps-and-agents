@@ -39,7 +39,7 @@ from app.servers.mcp_inventory_client import get_mcp_client
 _mcp_server_url = os.getenv("MCP_SERVER_URL", "http://localhost:8000/mcp-inventory/sse")
 
 # MCP-based tool wrapper functions
-async def mcp_create_image(prompt: str) -> str:
+def mcp_create_image(prompt: str) -> str:
     """
     Generate an AI image based on a text description using DALL-E.
     
@@ -50,15 +50,15 @@ async def mcp_create_image(prompt: str) -> str:
     Returns:
         URL or path to the generated image
     """
-    
-    mcp_client = await get_mcp_client(_mcp_server_url)
-    """Wrapper for create_image using MCP client"""
+
+    async def _create_image():
+        mcp_client = await get_mcp_client(_mcp_server_url)
+        return await mcp_client.call_tool("generate_product_image", {"prompt": prompt})
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        result = loop.run_until_complete(
-            mcp_client.call_tool("generate_product_image", {"prompt": prompt})
-        )
+        result = loop.run_until_complete(_create_image())
         return result
     finally:
         loop.close()
