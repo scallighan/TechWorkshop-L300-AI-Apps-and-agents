@@ -18,8 +18,8 @@ on:
   workflow_dispatch:
 
 env:
-  # Use docker.io for Docker Hub if empty
-  REGISTRY: ghcr.io
+  # Azure Container Registry login server, e.g. myregistry.azurecr.io
+  REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
   WORKINGDIR: src
@@ -63,8 +63,22 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Create .env file for Docker build
+        working-directory: ./${{ env.WORKINGDIR }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Keep PR builds working without exposing secrets.
+            : > .env
+          else
+            if [ -z "${{ secrets.ENV }}" ]; then
+              echo "ENV secret is not configured"
+              exit 1
+            fi
+            printf '%s' "${{ secrets.ENV }}" > .env
+          fi
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
