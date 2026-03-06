@@ -69,16 +69,8 @@ jobs:
       - name: Create .env file for Docker build
         working-directory: ./${{ env.WORKINGDIR }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Keep PR builds working without exposing secrets.
-            : > .env
-          else
-            if [ -z "${{ secrets.ENV }}" ]; then
-              echo "ENV secret is not configured"
-              exit 1
-            fi
-            printf '%s' "${{ secrets.ENV }}" > .env
-          fi
+          echo ${{ secrets.ENV }} > .env
+          
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
